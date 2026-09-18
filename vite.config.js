@@ -206,6 +206,36 @@ export default defineConfig({
     }),
   ],
 
+  /* ============================================================
+     SERVER — prevents Vite from watching non-frontend folders
+     (cloudflare-worker, android, dist, etc.)
+     Fixes: EBUSY / crash when .crdownload or .gradle files exist
+     ============================================================ */
+  server: {
+    watch: {
+      ignored: [
+        "**/cloudflare-worker/**",
+        "**/android/**",
+        "**/.gradle/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/node_modules/**",
+        "**/.git/**",
+        "**/*.crdownload",
+        "**/*.tmp",
+        "**/serviceAccount*.json",
+        "**/sa*.json",
+        "**/sa*.txt",
+      ],
+    },
+  },
+
+  /* Same ignore list for the production build */
+  optimizeDeps: {
+    entries: ["index.html"],
+    exclude: ["cloudflare-worker"],
+  },
+
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
   },

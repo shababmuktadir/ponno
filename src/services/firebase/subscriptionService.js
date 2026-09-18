@@ -312,3 +312,92 @@ async function audit(actor, action, meta = {}) {
     /* ignore */
   }
 }
+import { logRenewal } from "./renewalService";
+
+/**
+ * Renew a subscription with payment tracking.
+ * Adds a renewal record for admin earnings.
+ */
+export async function renewSubscription({
+  subscriptionId,
+  userId,
+  packageId,
+  packageName,
+  billingPeriod = "monthly",
+  customDays = 30,
+  amount,
+  paymentMethod = "manual",
+  note = "",
+  actor,
+  userName,
+  userEmail,
+}) {
+  if (!subscriptionId) throw new Error("subscriptionId প্রয়োজন");
+  if (!amount || Number(amount) <= 0)
+    throw new Error("পরিমাণ দিন");
+
+  // 1) Extend the subscription
+  const durationMap = {
+    monthly: 30,
+    yearly: 365,
+    fiveYear: 365 * 5,
+  };
+  const days =
+    billingPeriod === "custom"
+      ? Math.max(1, Number(customDays) || 1)
+      : durationMap[billingPeriod] || 30;
+
+  const ref = doc(db, SUBS, subscriptionId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("সাবস্ক্রিপশন পাওয়া যায়নি");
+  const data = snap.data();
+
+  const currentEnd = data.endDate ? new Date(data.endDate) : new Date();
+  const now = new Date();
+  const baseDate = currentEnd > now ? currentEnd : now;
+  const newEnd = new Date(baseDate);
+  newEnd.setDate(newEnd.getDate() + days);
+
+  await updateDoc(ref, {
+    endDate: newEnd.toISOString(),
+    durationDays: (Number(data.durationDays) || 0) + days,
+    status: "active",
+    lastRenewedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  // 2) Update user doc expiry
+  if (userId) {
+    await updateDoc(doc(db, USERS, userId), {
+      subscriptionEnd: newEnd.toISOString(),
+      subscriptionStatus: "active",
+      accountStatus: "active",
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  // 3) Log renewal for admin earnings
+  await logRenewal({
+    subscriptionId,
+    userId,
+    userName,
+    userEmail,
+    packageId,
+    packageName,
+    billingPeriod,
+    amount: Number(amount),
+    paymentMethod,
+    note,
+    actor,
+  });
+
+  await audit(actor, "subscription.renewed", {
+    subscriptionId,
+    userId,
+    billingPeriod,
+    amount: Number(amount),
+    newEnd: newEnd.toISOString(),
+  });
+
+  return { newEnd: newEnd.toISOString(), days };
+}

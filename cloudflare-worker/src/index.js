@@ -5,13 +5,15 @@
  *   GET  /api/sms/balance
  *   POST /api/sms/send    { phone, message }
  *   POST /api/email/send  { to, subject, html, text }
+ *   POST /api/fcm/send    { title, message, url, tokens[] }
  *
- * Secrets (set via `npx wrangler secret put NAME`):
+ * Secrets (wrangler secret put):
  *   BULKSMS_API_KEY
  *   BULKSMS_SENDER_ID
  *   RESEND_API_KEY
  *   FROM_EMAIL
  *   FROM_NAME
+ *   FIREBASE_SERVICE_ACCOUNT   (one-line JSON)
  */
 
 const CORS = {
@@ -23,7 +25,6 @@ const CORS = {
 
 export default {
   async fetch(request, env, ctx) {
-    // CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS });
     }
@@ -32,24 +33,30 @@ export default {
     const path = url.pathname;
 
     try {
-      // ---------- SMS ----------
       if (path === "/api/sms/balance" && request.method === "GET") {
         return await handleSmsBalance(env);
       }
       if (path === "/api/sms/send" && request.method === "POST") {
         return await handleSmsSend(request, env);
       }
-
-      // ---------- Email ----------
       if (path === "/api/email/send" && request.method === "POST") {
         return await handleEmailSend(request, env);
       }
-
-      // ---------- Health ----------
-      if (path === "/" || path === "/health") {
-        return json({ ok: true, service: "pm-api", time: new Date().toISOString() });
+      if (path === "/api/fcm/send" && request.method === "POST") {
+        return await handleFcmSend(request, env);
       }
-
+      if (path === "/" || path === "/health") {
+        return json({
+          ok: true,
+          service: "pm-api",
+          endpoints: [
+            "GET  /api/sms/balance",
+            "POST /api/sms/send",
+            "POST /api/email/send",
+            "POST /api/fcm/send",
+          ],
+        });
+      }
       return json({ error: "Not found" }, 404);
     } catch (err) {
       return json({ error: err.message || "Server error" }, 500);
@@ -58,8 +65,9 @@ export default {
 };
 
 /* ============================================================
-   SMS — Balance
+   SMS — BALANCE
    ============================================================ */
+
 async function handleSmsBalance(env) {
   const apiKey = env.BULKSMS_API_KEY;
   if (!apiKey) return json({ error: "SMS not configured" }, 500);
@@ -71,27 +79,16 @@ async function handleSmsBalance(env) {
   const res = await fetch(url);
   const text = await res.text();
 
-  // Try to parse so client gets a proper number
-  let parsed = null;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    /* not json */
-  }
-
-  return json(
-    {
-      success: res.ok,
-      balance: parsed?.balance ?? null,
-      raw: text,
-    },
-    res.ok ? 200 : 400
-  );
+  return new Response(JSON.stringify({ success: true, raw: text }), {
+    status: 200,
+    headers: { ...CORS, "Content-Type": "application/json" },
+  });
 }
 
 /* ============================================================
-   SMS — Send
+   SMS — SEND
    ============================================================ */
+
 async function handleSmsSend(request, env) {
   const apiKey = env.BULKSMS_API_KEY;
   const senderId = env.BULKSMS_SENDER_ID;
@@ -112,14 +109,13 @@ async function handleSmsSend(request, env) {
   if (!phone || !/^8801\d{9}$/.test(phone)) {
     return json({ error: "Invalid phone (use 8801XXXXXXXXX)" }, 400);
   }
-  if (!message || String(message).trim().length === 0) {
+  if (!message || message.trim().length === 0) {
     return json({ error: "Message required" }, 400);
   }
-  if (String(message).length > 1000) {
+  if (message.length > 1000) {
     return json({ error: "Message too long (max 1000 chars)" }, 400);
   }
 
-  // Build URL with query params (bulksmsbd API format)
   const url = new URL("http://bulksmsbd.net/api/smsapi");
   url.searchParams.set("api_key", apiKey);
   url.searchParams.set("type", "text");
@@ -130,10 +126,6 @@ async function handleSmsSend(request, env) {
   const res = await fetch(url.toString());
   const text = await res.text();
 
-  // ---------- Robust success detection ----------
-  // BulkSMSBD returns:
-  //   {"response_code":202,"message_id":123,"success_message":"SMS Submitted Successfully 1","error_message":""}
-  // on success. A "202" code + non-empty success_message + empty error_message.
   let parsed = null;
   try {
     parsed = JSON.parse(text);
@@ -141,35 +133,32 @@ async function handleSmsSend(request, env) {
     /* not json */
   }
 
-  const hasError =
-    typeof parsed?.error_message === "string" && parsed.error_message.length > 0;
-
   const isSuccess =
     res.ok &&
-    !hasError &&
-    (
-      parsed?.response_code === 202 ||
+    (parsed?.response_code === 202 ||
       (typeof parsed?.success_message === "string" &&
         parsed.success_message.length > 0) ||
-      /successfully/i.test(text)
-    );
+      /success/i.test(text)) &&
+    !(typeof parsed?.error_message === "string" &&
+      parsed.error_message.length > 0);
 
   return json(
     {
       success: isSuccess,
       raw: text,
       phone,
-      messageId: parsed?.message_id ?? null,
+      messageId: parsed?.message_id || null,
       successMessage: parsed?.success_message || null,
-      errorMessage: parsed?.error_message || null,
+      errorMessage: parsed.error_message || null,
     },
     isSuccess ? 200 : 400
   );
 }
 
 /* ============================================================
-   EMAIL — Send via Resend.com
+   EMAIL — SEND (via Resend.com)
    ============================================================ */
+
 async function handleEmailSend(request, env) {
   const apiKey = env.RESEND_API_KEY;
   const fromEmail = env.FROM_EMAIL;
@@ -194,7 +183,7 @@ async function handleEmailSend(request, env) {
   if (!to || !/^\S+@\S+\.\S+$/.test(to)) {
     return json({ error: "Invalid recipient email" }, 400);
   }
-  if (!subject || String(subject).trim().length === 0) {
+  if (!subject || !subject.trim()) {
     return json({ error: "Subject required" }, 400);
   }
   if (!html && !text) {
@@ -211,7 +200,7 @@ async function handleEmailSend(request, env) {
       from: `${fromName} <${fromEmail}>`,
       to: [to],
       subject,
-      html: html || `<p>${String(text).replace(/\n/g, "<br/>")}</p>`,
+      html: html || `<p>${text}</p>`,
       text: text || undefined,
     }),
   });
@@ -220,21 +209,198 @@ async function handleEmailSend(request, env) {
 
   if (!res.ok) {
     return json(
-      {
-        success: false,
-        error: data.message || data.error || "Email send failed",
-        details: data,
-      },
+      { error: data.message || "Email send failed", details: data },
       res.status
     );
   }
 
-  return json({ success: true, id: data.id, to });
+  return json({ success: true, id: data.id });
+}
+
+/* ============================================================
+   FCM — PUSH
+   ============================================================ */
+
+async function handleFcmSend(request, env) {
+  const saJson = env.FIREBASE_SERVICE_ACCOUNT;
+  if (!saJson) {
+    return json(
+      { error: "FCM not configured (missing FIREBASE_SERVICE_ACCOUNT)" },
+      500
+    );
+  }
+
+  let sa;
+  try {
+    sa =
+      typeof saJson === "string"
+        ? JSON.parse(saJson)
+        : saJson;
+  } catch {
+    return json({ error: "FIREBASE_SERVICE_ACCOUNT invalid JSON" }, 500);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const { title, message, url, tokens } = body;
+  if (!title || !message) {
+    return json({ error: "title & message required" }, 400);
+  }
+  if (!Array.isArray(tokens) || tokens.length === 0) {
+    return json({ success: true, sent: 0, skipped: "no tokens" });
+  }
+
+  let accessToken;
+  try {
+    accessToken = await getGoogleAccessToken(sa);
+  } catch (err) {
+    return json(
+      { error: "Failed to get Google access token", details: err.message },
+      500
+    );
+  }
+
+  const projectId = sa.project_id;
+  const endpoint = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
+
+  let sent = 0;
+  let failed = 0;
+  const errors = [];
+
+  for (const token of tokens.slice(0, 500)) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: { title, body: message },
+            webpush: {
+              notification: {
+                title,
+                body: message,
+                icon: "/icons/pwa-192.png",
+                badge: "/icons/pwa-192.png",
+                tag: "pm-notification",
+                renotify: true,
+              },
+              fcmOptions: { link: url || "/notifications" },
+            },
+            data: {
+              url: url || "/notifications",
+              tag: "pm-notification",
+            },
+          },
+        }),
+      });
+
+      if (res.ok) {
+        sent++;
+      } else {
+        failed++;
+        const err = await res.json().catch(() => ({}));
+        errors.push(err?.error?.message || `HTTP ${res.status}`);
+      }
+    } catch (err) {
+      failed++;
+      errors.push(err.message);
+    }
+  }
+
+  return json({
+    success: true,
+    sent,
+    failed,
+    errors: errors.slice(0, 5),
+  });
+}
+
+/* ============================================================
+   Google OAuth2 (JWT → access token)
+   ============================================================ */
+
+async function getGoogleAccessToken(sa) {
+  const header = { alg: "RS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const claims = {
+    iss: sa.client_email,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+  };
+
+  const enc = (obj) => base64urlEncode(JSON.stringify(obj));
+
+  const toSign = `${enc(header)}.${enc(claims)}`;
+  const signature = await signRS256(toSign, sa.private_key);
+  const jwt = `${toSign}.${signature}`;
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }).toString(),
+  });
+
+  const data = await res.json();
+  if (!data.access_token) {
+    throw new Error(`OAuth failed: ${data.error || "unknown"}`);
+  }
+  return data.access_token;
+}
+
+function base64urlEncode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function signRS256(data, pemPrivateKey) {
+  const pemHeader = "-----BEGIN PRIVATE KEY-----";
+  const pemFooter = "-----END PRIVATE KEY-----";
+  const keyBody = pemPrivateKey
+    .replace(pemHeader, "")
+    .replace(pemFooter, "")
+    .replace(/\s+/g, "");
+
+  const keyBytes = Uint8Array.from(atob(keyBody), (c) => c.charCodeAt(0));
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    keyBytes.buffer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    new TextEncoder().encode(data)
+  );
+
+  let binary = "";
+  for (const b of new Uint8Array(signature)) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 /* ============================================================
    HELPERS
    ============================================================ */
+
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,

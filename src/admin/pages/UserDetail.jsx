@@ -15,7 +15,7 @@ import {
 } from "@/admin/services/adminService";
 import {
   assignPackageToUser, listUserSubscriptions, cancelSubscription,
-  extendSubscription, calcEndDate,
+  extendSubscription, calcEndDate, renewSubscription,
 } from "@/services/firebase/subscriptionService";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/errors";
@@ -64,20 +64,29 @@ export default function UserDetail() {
     notes: "",
   });
 
+  // Renew modal state
+  const [renewOpen, setRenewOpen] = useState(false);
+  const [renewForm, setRenewForm] = useState({
+    billingPeriod: "monthly",
+    customDays: 30,
+    amount: "",
+    note: "",
+  });
+  const [renewing, setRenewing] = useState(false);
+
   const actor = {
     uid: profile?.uid,
     name: profile?.name,
     role: profile?.role,
   };
 
-  /* ---------------- RESILIENT PARALLEL LOAD ---------------- */
+  /* ---------------- Load ---------------- */
   const load = async () => {
     setLoading(true);
     setLoadErrors([]);
 
     const errors = [];
 
-    // 1) User doc — critical
     let u = null;
     try {
       u = await getUser(uid);
@@ -87,7 +96,6 @@ export default function UserDetail() {
       if (import.meta.env.DEV) console.error("[UserDetail] user:", err);
     }
 
-    // 2) Packages — optional
     let pkgs = [];
     try {
       pkgs = await listPackages({ max: 100 });
@@ -97,7 +105,6 @@ export default function UserDetail() {
       if (import.meta.env.DEV) console.error("[UserDetail] packages:", err);
     }
 
-    // 3) Subscriptions — optional
     let subscriptions = [];
     try {
       subscriptions = await listUserSubscriptions(uid, 15);
@@ -222,9 +229,7 @@ export default function UserDetail() {
         actor,
         workspaceId: user.workspaceId,
       });
-      toast.success(
-        "প্যাকেজ অ্যাসাইন হয়েছে — ইউজারের ড্যাশবোর্ডে সাথে সাথে প্রয়োগ হয়েছে"
-      );
+      toast.success("প্যাকেজ অ্যাসাইন হয়েছে");
       setAssign({
         packageId: "",
         billingPeriod: "monthly",
@@ -267,6 +272,35 @@ export default function UserDetail() {
     }
   };
 
+  const handleRenew = async () => {
+    if (!renewForm.amount || Number(renewForm.amount) <= 0) {
+      return toast.error("পেমেন্ট পরিমাণ দিন");
+    }
+    setRenewing(true);
+    try {
+      await renewSubscription({
+        subscriptionId: activeSub.id,
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        packageId: activeSub.packageId,
+        packageName: activeSub.packageName,
+        billingPeriod: renewForm.billingPeriod,
+        customDays: renewForm.customDays,
+        amount: Number(renewForm.amount),
+        note: renewForm.note,
+        actor,
+      });
+      toast.success("রিনিউ সফল — আর্নিং এ যোগ হয়েছে");
+      setRenewOpen(false);
+      load();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setRenewing(false);
+    }
+  };
+
   /* ---------------- Loading ---------------- */
   if (loading) {
     return (
@@ -279,7 +313,6 @@ export default function UserDetail() {
     );
   }
 
-  /* ---------------- Error state (only if user doc failed) ---------------- */
   if (!user) {
     return (
       <div className="space-y-4">
@@ -332,7 +365,6 @@ export default function UserDetail() {
         <ArrowLeft className="h-3.5 w-3.5" /> ফিরে যান
       </button>
 
-      {/* Warning banner if some sub-loads failed but user loaded */}
       {loadErrors.length > 0 && (
         <div className="rounded-[12px] border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
           <p className="font-medium">কিছু ডেটা লোড করা যায়নি:</p>
@@ -393,6 +425,21 @@ export default function UserDetail() {
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              onClick={() => {
+                setRenewForm({
+                  billingPeriod: activeSub.billingPeriod || "monthly",
+                  customDays: 30,
+                  amount: "",
+                  note: "",
+                });
+                setRenewOpen(true);
+              }}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              রিনিউ + পেমেন্ট
+            </Button>
             <Button
               size="sm"
               variant="secondary"
@@ -755,6 +802,105 @@ export default function UserDetail() {
           </div>
         )}
       </Card>
+
+      {/* ============ Renew modal ============ */}
+      {renewOpen && activeSub && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => !renewing && setRenewOpen(false)}
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="glass-strong relative w-full max-w-md rounded-[20px] p-5"
+          >
+            <h3 className="mb-1 text-base font-semibold text-ink">
+              সাবস্ক্রিপশন রিনিউ
+            </h3>
+            <p className="mb-4 text-xs text-muted">
+              {user.name} — {activeSub.packageName}
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1.5 block text-[13px] font-medium text-ink">
+                  বিলিং সময়কাল
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {BILLING_OPTIONS.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() =>
+                        setRenewForm((f) => ({ ...f, billingPeriod: o.id }))
+                      }
+                      className={cn(
+                        "rounded-[10px] border px-3 py-1.5 text-xs transition-colors",
+                        renewForm.billingPeriod === o.id
+                          ? "border-accent-strong bg-accent/20 text-ink"
+                          : "border-line bg-surface-2 text-muted hover:border-line-strong"
+                      )}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {renewForm.billingPeriod === "custom" && (
+                <Input
+                  label="দিন সংখ্যা"
+                  type="number"
+                  min="1"
+                  value={renewForm.customDays}
+                  onChange={(e) =>
+                    setRenewForm((f) => ({
+                      ...f,
+                      customDays: Number(e.target.value),
+                    }))
+                  }
+                />
+              )}
+
+              <Input
+                label="পেমেন্ট পরিমাণ (৳)"
+                type="number"
+                min="0"
+                value={renewForm.amount}
+                onChange={(e) =>
+                  setRenewForm((f) => ({ ...f, amount: e.target.value }))
+                }
+                placeholder="যত টাকা নিয়েছেন"
+                required
+              />
+
+              <Input
+                label="নোট (ঐচ্ছিক)"
+                value={renewForm.note}
+                onChange={(e) =>
+                  setRenewForm((f) => ({ ...f, note: e.target.value }))
+                }
+                placeholder="যেমন: bKash TrxID..."
+              />
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => setRenewOpen(false)}
+                disabled={renewing}
+              >
+                বাতিল
+              </Button>
+              <Button loading={renewing} onClick={handleRenew}>
+                <RefreshCw className="h-4 w-4" />
+                রিনিউ করুন
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import VerifyEmail from "@/pages/auth/VerifyEmail";
 import Suspended from "@/pages/auth/Suspended";
 import NotFound from "@/pages/NotFound";
 
+import Chat from "@/pages/chat/Chat";
 import Dashboard from "@/pages/dashboard/Dashboard";
 import Products from "@/pages/products/Products";
 import Categories from "@/pages/categories/Categories";
@@ -22,6 +23,8 @@ import Invoices from "@/pages/invoices/Invoices";
 import InvoiceEditor from "@/pages/invoices/InvoiceEditor";
 import Reports from "@/pages/reports/Reports";
 import Sms from "@/pages/sms/Sms";
+import Team from "@/pages/team/Team";
+import UserNotifications from "@/pages/notifications/Notifications";
 import Placeholder from "@/pages/Placeholder";
 import UserSettings from "@/pages/settings/UserSettings";
 
@@ -72,9 +75,9 @@ export default function AppRoutes() {
         <Route path="/invoices/:id" element={<InvoiceEditor />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/sms" element={<Sms />} />
-        <Route path="/team" element={<Placeholder title="ইউজার" />} />
-        <Route path="/chat" element={<Placeholder title="চ্যাট" />} />
-        <Route path="/notifications" element={<Placeholder title="নোটিফিকেশন" />} />
+        <Route path="/team" element={<Team />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/notifications" element={<UserNotifications />} />
         <Route path="/settings" element={<UserSettings />} />
       </Route>
 
@@ -86,72 +89,155 @@ export default function AppRoutes() {
         <Route element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route path="dashboard" element={<AdminDashboard />} />
 
-          <Route path="pending-users" element={
-            <AdminRoute permission="users.approve"><PendingUsers /></AdminRoute>
-          } />
+          <Route
+            path="pending-users"
+            element={
+              <AdminRoute permission="users.approve">
+                <PendingUsers />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="users" element={
-            <AdminRoute permission="users.view"><Users /></AdminRoute>
-          } />
-          <Route path="users/:uid" element={
-            <AdminRoute permission="users.view"><UserDetail /></AdminRoute>
-          } />
+          <Route
+            path="users"
+            element={
+              <AdminRoute permission="users.view">
+                <Users />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="users/:uid"
+            element={
+              <AdminRoute permission="users.view">
+                <UserDetail />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="staff" element={
-            <AdminRoute permission="staff.manage"><Staff /></AdminRoute>
-          } />
+          <Route
+            path="staff"
+            element={
+              <AdminRoute permission="staff.manage">
+                <Staff />
+              </AdminRoute>
+            }
+          />
 
-          {/* Package manager */}
-          <Route path="packages" element={
-            <AdminRoute permission="packages.view"><Packages /></AdminRoute>
-          } />
-          <Route path="packages/new" element={
-            <AdminRoute permission="packages.manage"><PackageEditor /></AdminRoute>
-          } />
-          <Route path="packages/:id" element={
-            <AdminRoute permission="packages.manage"><PackageEditor /></AdminRoute>
-          } />
+          <Route
+            path="packages"
+            element={
+              <AdminRoute permission="packages.view">
+                <Packages />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="packages/new"
+            element={
+              <AdminRoute permission="packages.manage">
+                <PackageEditor />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="packages/:id"
+            element={
+              <AdminRoute permission="packages.manage">
+                <PackageEditor />
+              </AdminRoute>
+            }
+          />
 
-          {/* Pricing settings */}
-          <Route path="pricing" element={
-            <AdminRoute permission="packages.manage"><PricingSettings /></AdminRoute>
-          } />
+          <Route
+            path="pricing"
+            element={
+              <AdminRoute permission="packages.manage">
+                <PricingSettings />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="subscriptions" element={
-            <AdminRoute permission="subscriptions.view"><Subscriptions /></AdminRoute>
-          } />
+          <Route
+            path="subscriptions"
+            element={
+              <AdminRoute permission="subscriptions.view">
+                <Subscriptions />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="earnings" element={
-            <AdminRoute permission="earnings.view"><AdminEarnings /></AdminRoute>
-          } />
+          <Route
+            path="earnings"
+            element={
+              <AdminRoute permission="earnings.view">
+                <AdminEarnings />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="usage" element={
-            <AdminRoute permission="usage.view"><Usage /></AdminRoute>
-          } />
+          <Route
+            path="usage"
+            element={
+              <AdminRoute permission="usage.view">
+                <Usage />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="search" element={
-            <AdminRoute permission="users.view"><UserSearch /></AdminRoute>
-          } />
+          <Route
+            path="search"
+            element={
+              <AdminRoute permission="users.view">
+                <UserSearch />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="notifications" element={
-            <AdminRoute permission="notifications.view"><AdminNotifications /></AdminRoute>
-          } />
+          <Route
+            path="notifications"
+            element={
+              <AdminRoute permission="notifications.view">
+                <AdminNotifications />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="chat" element={
-            <AdminRoute permission="chat.view"><AdminChat /></AdminRoute>
-          } />
+          <Route
+            path="chat"
+            element={
+              <AdminRoute permission="chat.view">
+                <AdminChat />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="reports" element={
-            <AdminRoute permission="reports.view"><AdminReports /></AdminRoute>
-          } />
+          <Route
+            path="reports"
+            element={
+              <AdminRoute permission="reports.view">
+                <AdminReports />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="audit" element={
-            <AdminRoute permission="audit.view"><AuditLogs /></AdminRoute>
-          } />
+          <Route
+            path="audit"
+            element={
+              <AdminRoute permission="audit.view">
+                <AuditLogs />
+              </AdminRoute>
+            }
+          />
 
-          <Route path="settings" element={
-            <AdminRoute permission="settings.view"><AdminSettings /></AdminRoute>
-          } />
+          <Route
+            path="settings"
+            element={
+              <AdminRoute permission="settings.view">
+                <AdminSettings />
+              </AdminRoute>
+            }
+          />
         </Route>
       </Route>
 
