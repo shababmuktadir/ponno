@@ -4,12 +4,15 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(
+  readFileSync(path.resolve(__dirname, "./package.json"), "utf-8")
+);
 
 /**
  * Vite 8 (Rolldown) requires manualChunks as a FUNCTION.
- * Object form was supported in Vite 5/6/7 (Rollup).
  */
 function manualChunks(id) {
   if (!id.includes("node_modules")) return;
@@ -59,13 +62,23 @@ function manualChunks(id) {
   return "vendor";
 }
 
+const BUILD_ID =
+  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ||
+  Date.now().toString(36);
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version || "1.0.0"),
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
+
   plugins: [
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
-      injectRegister: "auto",
+      registerType: "prompt",
+      injectRegister: null,
       includeAssets: [
         "favicon.svg",
         "icons.svg",
@@ -77,13 +90,13 @@ export default defineConfig({
         "icons/*.png",
       ],
       manifest: {
-        name: "প্রোডাক্ট ম্যানেজমেন্ট — অ্যাডমিন",
-        short_name: "অ্যাডমিন",
+        name: "প্রোডাক্ট ম্যানেজমেন্ট",
+        short_name: "PM",
         description:
-          "বাংলা প্রোডাক্ট ম্যানেজমেন্ট ও ইনভেন্টরি অ্যাডমিন প্ল্যাটফর্ম",
+          "বাংলা প্রোডাক্ট ম্যানেজমেন্ট ও ইনভেন্টরি প্ল্যাটফর্ম",
         lang: "bn",
         dir: "ltr",
-        start_url: "/admin/dashboard",
+        start_url: "/login",
         scope: "/",
         display: "standalone",
         display_override: ["window-controls-overlay", "standalone"],
@@ -141,42 +154,18 @@ export default defineConfig({
           {
             name: "ড্যাশবোর্ড",
             short_name: "হোম",
-            url: "/admin/dashboard",
+            url: "/dashboard",
             icons: [
               { src: "/icons/pwa-192.png", sizes: "192x192", type: "image/png" },
             ],
           },
           {
-            name: "ইউজার লিস্ট",
-            short_name: "ইউজার",
-            url: "/admin/users",
+            name: "প্রোডাক্ট",
+            short_name: "প্রোডাক্ট",
+            url: "/products",
             icons: [
               { src: "/icons/pwa-192.png", sizes: "192x192", type: "image/png" },
             ],
-          },
-          {
-            name: "পেন্ডিং ইউজার",
-            short_name: "পেন্ডিং",
-            url: "/admin/pending-users",
-            icons: [
-              { src: "/icons/pwa-192.png", sizes: "192x192", type: "image/png" },
-            ],
-          },
-          {
-            name: "প্যাকেজ",
-            short_name: "প্যাকেজ",
-            url: "/admin/packages",
-            icons: [
-              { src: "/icons/pwa-192.png", sizes: "192x192", type: "image/png" },
-            ],
-          },
-        ],
-        screenshots: [
-          {
-            src: "/ios/1024.png",
-            sizes: "1024x1024",
-            type: "image/png",
-            form_factor: "wide",
           },
         ],
       },
@@ -186,6 +175,8 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/__/, /^\/admin\/api/],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         cleanupOutdatedCaches: true,
+        skipWaiting: false,
+        clientsClaim: false,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,

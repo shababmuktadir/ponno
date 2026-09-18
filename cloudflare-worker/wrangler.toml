@@ -1,0 +1,14 @@
+name = "pm-api"
+main = "src/index.js"
+compatibility_date = "2024-10-01"
+
+# Secrets set via: npx wrangler secret put NAME
+#   BULKSMS_API_KEY
+#   BULKSMS_SENDER_ID
+#   RESEND_API_KEY
+#   FROM_EMAIL
+#   FROM_NAME
+
+# Optional: rate limiting
+[observability]
+enabled = true

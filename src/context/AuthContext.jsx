@@ -1,12 +1,12 @@
 import {
   createContext, useContext, useEffect, useMemo, useRef, useState, useCallback,
 } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/config/firebase";
 import {
   watchAuth, fetchUserDoc, ensureUserDoc, logoutUser,
 } from "@/services/firebase/authService";
-import {
-  SUPER_ADMIN_UID, ROLES, hasPermission, isStaffRole,
-} from "@/config/roles";
+import { SUPER_ADMIN_UID, ROLES, hasPermission, isStaffRole } from "@/config/roles";
 
 const AuthContext = createContext(null);
 
@@ -17,19 +17,7 @@ export function AuthProvider({ children }) {
   const [authError, setAuthError] = useState(null);
   const mounted = useRef(true);
 
-  const loadProfile = useCallback(async (user, { heal = true } = {}) => {
-    try {
-      let data = await fetchUserDoc(user.uid);
-      if (!data && heal) data = await ensureUserDoc(user);
-      if (mounted.current) setProfile(data);
-      return data;
-    } catch (err) {
-      if (import.meta.env.DEV) console.error("[loadProfile]", err);
-      if (mounted.current) setProfile(null);
-      return null;
-    }
-  }, []);
-
+  // ---------- Bootstrap auth ----------
   useEffect(() => {
     mounted.current = true;
     let timeoutId;
@@ -44,6 +32,7 @@ export function AuthProvider({ children }) {
         return;
       }
 
+      // First-time fetch (heal if missing)
       timeoutId = setTimeout(() => {
         if (mounted.current) {
           setAuthError(
@@ -53,9 +42,16 @@ export function AuthProvider({ children }) {
         }
       }, 10000);
 
-      await loadProfile(user, { heal: true });
-      clearTimeout(timeoutId);
-      if (mounted.current) setLoading(false);
+      try {
+        let data = await fetchUserDoc(user.uid);
+        if (!data) data = await ensureUserDoc(user);
+        if (mounted.current) setProfile(data);
+      } catch (err) {
+        if (import.meta.env.DEV) console.error("[auth bootstrap]", err);
+      } finally {
+        clearTimeout(timeoutId);
+        if (mounted.current) setLoading(false);
+      }
     });
 
     return () => {
@@ -63,17 +59,40 @@ export function AuthProvider({ children }) {
       clearTimeout(timeoutId);
       unsub();
     };
-  }, [loadProfile]);
+  }, []);
 
+  // ---------- Realtime listener on own user doc ----------
+  useEffect(() => {
+    if (!firebaseUser) return;
+
+    const ref = doc(db, "users", firebaseUser.uid);
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
+        if (snap.exists()) {
+          setProfile({ id: snap.id, ...snap.data() });
+        } else {
+          setProfile(null);
+        }
+      },
+      (err) => {
+        if (import.meta.env.DEV) console.error("[auth onSnapshot]", err);
+      }
+    );
+    return () => unsub();
+  }, [firebaseUser]);
+
+  // ---------- Manual refresh ----------
   const refreshProfile = useCallback(async () => {
     if (!firebaseUser) return null;
-    setAuthError(null);
-    return loadProfile(firebaseUser, { heal: true });
-  }, [firebaseUser, loadProfile]);
+    const data = await fetchUserDoc(firebaseUser.uid);
+    setProfile(data);
+    return data;
+  }, [firebaseUser]);
 
+  // ---------- Context value ----------
   const value = useMemo(() => {
     const uid = firebaseUser?.uid || null;
-    // HARD-CODED SUPER ADMIN — always wins regardless of Firestore state
     const isHardcodedSuper = uid === SUPER_ADMIN_UID;
     const rawRole = profile?.role || ROLES.USER;
     const role = isHardcodedSuper ? ROLES.SUPER_ADMIN : rawRole;

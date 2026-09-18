@@ -12,7 +12,18 @@ import Suspended from "@/pages/auth/Suspended";
 import NotFound from "@/pages/NotFound";
 
 import Dashboard from "@/pages/dashboard/Dashboard";
+import Products from "@/pages/products/Products";
+import Categories from "@/pages/categories/Categories";
+import Stock from "@/pages/stock/Stock";
+import StockDashboard from "@/pages/stock/StockDashboard";
+import Earnings from "@/pages/earnings/Earnings";
+import Customers from "@/pages/customers/Customers";
+import Invoices from "@/pages/invoices/Invoices";
+import InvoiceEditor from "@/pages/invoices/InvoiceEditor";
+import Reports from "@/pages/reports/Reports";
+import Sms from "@/pages/sms/Sms";
 import Placeholder from "@/pages/Placeholder";
+import UserSettings from "@/pages/settings/UserSettings";
 
 import AccessDenied from "@/admin/pages/AccessDenied";
 import AdminDashboard from "@/admin/pages/AdminDashboard";
@@ -21,13 +32,15 @@ import Users from "@/admin/pages/Users";
 import UserDetail from "@/admin/pages/UserDetail";
 import Staff from "@/admin/pages/Staff";
 import Packages from "@/admin/pages/Packages";
+import PackageEditor from "@/admin/pages/PackageEditor";
+import PricingSettings from "@/admin/pages/PricingSettings";
 import Subscriptions from "@/admin/pages/Subscriptions";
-import Earnings from "@/admin/pages/Earnings";
+import AdminEarnings from "@/admin/pages/Earnings";
 import Usage from "@/admin/pages/Usage";
 import UserSearch from "@/admin/pages/UserSearch";
-import Notifications from "@/admin/pages/Notifications";
+import AdminNotifications from "@/admin/pages/Notifications";
 import AdminChat from "@/admin/pages/Chat";
-import Reports from "@/admin/pages/Reports";
+import AdminReports from "@/admin/pages/Reports";
 import AuditLogs from "@/admin/pages/AuditLogs";
 import AdminSettings from "@/admin/pages/AdminSettings";
 
@@ -36,7 +49,7 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
 
-      {/* ---------- Auth (single login) ---------- */}
+      {/* ---------- Auth ---------- */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
         <Route path="/signup" element={<GuestRoute><Signup /></GuestRoute>} />
@@ -48,19 +61,21 @@ export default function AppRoutes() {
       {/* ---------- User App ---------- */}
       <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/products/*" element={<Placeholder title="প্রোডাক্ট" />} />
-        <Route path="/categories" element={<Placeholder title="ক্যাটাগরি" />} />
-        <Route path="/stock" element={<Placeholder title="স্টক" />} />
-        <Route path="/stock/dashboard" element={<Placeholder title="স্টক ড্যাশবোর্ড" />} />
-        <Route path="/earnings" element={<Placeholder title="আয়" />} />
-        <Route path="/reports" element={<Placeholder title="রিপোর্ট" />} />
-        <Route path="/invoices/*" element={<Placeholder title="ইনভয়েস" />} />
-        <Route path="/customers" element={<Placeholder title="কাস্টমার" />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/categories" element={<Categories />} />
+        <Route path="/stock" element={<Stock />} />
+        <Route path="/stock/dashboard" element={<StockDashboard />} />
+        <Route path="/earnings" element={<Earnings />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/invoices" element={<Invoices />} />
+        <Route path="/invoices/new" element={<InvoiceEditor />} />
+        <Route path="/invoices/:id" element={<InvoiceEditor />} />
+        <Route path="/customers" element={<Customers />} />
+        <Route path="/sms" element={<Sms />} />
         <Route path="/team" element={<Placeholder title="ইউজার" />} />
-        <Route path="/sms" element={<Placeholder title="এসএমএস" />} />
         <Route path="/chat" element={<Placeholder title="চ্যাট" />} />
         <Route path="/notifications" element={<Placeholder title="নোটিফিকেশন" />} />
-        <Route path="/settings" element={<Placeholder title="সেটিংস" />} />
+        <Route path="/settings" element={<UserSettings />} />
       </Route>
 
       {/* ---------- Admin ---------- */}
@@ -86,8 +101,20 @@ export default function AppRoutes() {
             <AdminRoute permission="staff.manage"><Staff /></AdminRoute>
           } />
 
+          {/* Package manager */}
           <Route path="packages" element={
             <AdminRoute permission="packages.view"><Packages /></AdminRoute>
+          } />
+          <Route path="packages/new" element={
+            <AdminRoute permission="packages.manage"><PackageEditor /></AdminRoute>
+          } />
+          <Route path="packages/:id" element={
+            <AdminRoute permission="packages.manage"><PackageEditor /></AdminRoute>
+          } />
+
+          {/* Pricing settings */}
+          <Route path="pricing" element={
+            <AdminRoute permission="packages.manage"><PricingSettings /></AdminRoute>
           } />
 
           <Route path="subscriptions" element={
@@ -95,7 +122,7 @@ export default function AppRoutes() {
           } />
 
           <Route path="earnings" element={
-            <AdminRoute permission="earnings.view"><Earnings /></AdminRoute>
+            <AdminRoute permission="earnings.view"><AdminEarnings /></AdminRoute>
           } />
 
           <Route path="usage" element={
@@ -107,7 +134,7 @@ export default function AppRoutes() {
           } />
 
           <Route path="notifications" element={
-            <AdminRoute permission="notifications.view"><Notifications /></AdminRoute>
+            <AdminRoute permission="notifications.view"><AdminNotifications /></AdminRoute>
           } />
 
           <Route path="chat" element={
@@ -115,7 +142,7 @@ export default function AppRoutes() {
           } />
 
           <Route path="reports" element={
-            <AdminRoute permission="reports.view"><Reports /></AdminRoute>
+            <AdminRoute permission="reports.view"><AdminReports /></AdminRoute>
           } />
 
           <Route path="audit" element={
