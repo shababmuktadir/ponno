@@ -1,0 +1,404 @@
+/* ============================================================
+   LOCAL FONT — Kalpurush
+   File: public/kalpurush.ttf  →  served at /kalpurush.ttf
+   ============================================================ */
+@font-face {
+  font-family: "Kalpurush";
+  src: url("/kalpurush.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Kalpurush";
+  src: url("/kalpurush.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Kalpurush";
+  src: url("/kalpurush.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Kalpurush";
+  src: url("/kalpurush.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg:             #F4F2EE;
+  --bg-elevated:    #FBFAF7;
+  --surface-solid:  #FFFFFF;
+  --surface:        rgba(255, 255, 255, 0.62);
+  --surface-2:      rgba(241, 239, 234, 0.55);
+  --surface-3:      #E9E5DC;
+
+  --border:         rgba(11, 11, 12, 0.08);
+  --border-strong:  rgba(11, 11, 12, 0.16);
+
+  --text:           #0B0B0C;
+  --text-muted:     #56565C;
+  --text-subtle:    #8B8B92;
+
+  --accent:         #E6DDC9;
+  --accent-strong:  #C9B994;
+  --accent-fg:      #1C1C1F;
+
+  --danger:         #B0413E;
+  --success:        #3F6B4A;
+  --warning:        #8A6B2E;
+
+  --glass-bg:       rgba(255, 255, 255, 0.55);
+  --glass-bg-2:     rgba(255, 255, 255, 0.74);
+  --glass-border:   rgba(255, 255, 255, 0.75);
+  --glass-border-2: rgba(11, 11, 12, 0.06);
+  --glass-blur:     22px;
+  --glass-sat:      180%;
+
+  --orb-1: rgba(230, 221, 201, 0.85);
+  --orb-2: rgba(201, 185, 148, 0.45);
+  --orb-3: rgba(180, 175, 168, 0.55);
+  --orb-4: rgba(255, 255, 255, 0.9);
+  --noise-opacity: 0.045;
+
+  --radius-sm: 10px;
+  --radius:    14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --shadow-xs: 0 1px 2px rgba(11,11,12,.05);
+  --shadow-sm: 0 2px 8px rgba(11,11,12,.06), 0 1px 2px rgba(11,11,12,.04);
+  --shadow-md: 0 10px 30px rgba(11,11,12,.08), 0 3px 8px rgba(11,11,12,.05);
+  --shadow-lg: 0 24px 60px rgba(11,11,12,.12), 0 8px 20px rgba(11,11,12,.07);
+  --shadow-glow: 0 0 0 1px rgba(255,255,255,.6) inset,
+                 0 12px 40px rgba(201,185,148,.18);
+
+  /* Font size (controlled by FontSizeProvider) */
+  --font-size-base: 16px;
+
+  color-scheme: light;
+}
+
+.dark {
+  --bg:             #08080A;
+  --bg-elevated:    #0F0F11;
+  --surface-solid:  #131316;
+  --surface:        rgba(22, 22, 26, 0.55);
+  --surface-2:      rgba(32, 32, 38, 0.6);
+  --surface-3:      #1A1A1E;
+
+  --border:         rgba(244, 243, 241, 0.07);
+  --border-strong:  rgba(244, 243, 241, 0.16);
+
+  --text:           #F2F1EE;
+  --text-muted:     #A0A0A8;
+  --text-subtle:    #6E6E76;
+
+  --accent:         #D9CFBE;
+  --accent-strong:  #EBE3D2;
+  --accent-fg:      #0B0B0C;
+
+  --danger:         #E08B8B;
+  --success:        #8FBF9A;
+  --warning:        #D6B36A;
+
+  --glass-bg:       rgba(18, 18, 22, 0.55);
+  --glass-bg-2:     rgba(18, 18, 22, 0.75);
+  --glass-border:   rgba(244, 243, 241, 0.09);
+  --glass-border-2: rgba(244, 243, 241, 0.14);
+  --glass-blur:     26px;
+  --glass-sat:      160%;
+
+  --orb-1: rgba(230, 221, 201, 0.12);
+  --orb-2: rgba(140, 130, 110, 0.14);
+  --orb-3: rgba(90, 90, 110, 0.18);
+  --orb-4: rgba(40, 40, 50, 0.6);
+  --noise-opacity: 0.07;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-sm: 0 2px 10px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3);
+  --shadow-md: 0 12px 32px rgba(0,0,0,.5), 0 3px 8px rgba(0,0,0,.35);
+  --shadow-lg: 0 30px 70px rgba(0,0,0,.6), 0 10px 24px rgba(0,0,0,.4);
+  --shadow-glow: 0 0 0 1px rgba(255,255,255,.04) inset,
+                 0 12px 40px rgba(217,207,190,.08);
+
+  color-scheme: dark;
+}
+
+/* ============================================================
+   Tailwind theme exposure
+   ============================================================ */
+@theme inline {
+  --color-bg:             var(--bg);
+  --color-bg-elevated:    var(--bg-elevated);
+  --color-surface:        var(--surface);
+  --color-surface-solid:  var(--surface-solid);
+  --color-surface-2:      var(--surface-2);
+  --color-surface-3:      var(--surface-3);
+  --color-line:           var(--border);
+  --color-line-strong:    var(--border-strong);
+
+  --color-ink:    var(--text);
+  --color-muted:  var(--text-muted);
+  --color-subtle: var(--text-subtle);
+
+  --color-accent:        var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-fg:     var(--accent-fg);
+
+  --color-danger:  var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+
+  --font-bangla: "Kalpurush", "Noto Sans Bengali", "SolaimanLipi",
+                 system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans:   "Kalpurush", "Inter", "Noto Sans Bengali", system-ui, sans-serif;
+
+  --radius-card:  16px;
+  --radius-field: 12px;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+@layer base {
+  * { border-color: var(--border); }
+
+  html {
+    /* This is what FontSizeProvider controls — everything rem-based scales */
+    font-size: var(--font-size-base, 16px);
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    transition: font-size 200ms ease;
+  }
+
+  html, body, #root { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-bangla);
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-bangla);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  p, span, div, li, td, th, label, button, input, textarea, select {
+    font-family: var(--font-bangla);
+  }
+
+  code, pre, kbd, samp {
+    font-family: ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+    font-size: 0.9em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  ::selection { background: var(--accent); color: var(--accent-fg); }
+
+  input, select, textarea, button { font: inherit; color: inherit; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+@utility glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md);
+}
+
+@utility glass-strong {
+  background: var(--glass-bg-2);
+  backdrop-filter: blur(calc(var(--glass-blur) + 6px)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 6px)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-lg);
+}
+
+@utility glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      140deg,
+      rgba(255,255,255,.14) 0%,
+      rgba(255,255,255,0) 35%,
+      rgba(255,255,255,0) 65%,
+      rgba(255,255,255,.06) 100%
+    );
+    pointer-events: none;
+  }
+}
+
+@utility card {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Hide scrollbar */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+@utility label-xs {
+  font-size: 0.7rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+@utility text-gradient {
+  background: linear-gradient(120deg, var(--text) 0%, var(--text-muted) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ============================================================
+   Admin panel — dark gaming vibe / light soft vibe
+   ============================================================ */
+.dark .admin-glow {
+  position: relative;
+}
+.dark .admin-glow::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    130deg,
+    rgba(217, 207, 190, 0.35),
+    rgba(217, 207, 190, 0) 40%,
+    rgba(217, 207, 190, 0) 60%,
+    rgba(217, 207, 190, 0.15)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+:root .admin-glow {
+  position: relative;
+}
+:root .admin-glow::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    130deg,
+    rgba(201, 185, 148, 0.4),
+    rgba(201, 185, 148, 0) 45%,
+    rgba(201, 185, 148, 0) 60%,
+    rgba(201, 185, 148, 0.2)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.dark .neon-hover {
+  transition: box-shadow 220ms ease, border-color 220ms ease;
+}
+.dark .neon-hover:hover {
+  border-color: rgba(217, 207, 190, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(217, 207, 190, 0.15),
+    0 0 24px -4px rgba(217, 207, 190, 0.35);
+}
+
+.glass-strong ::-webkit-scrollbar { width: 8px; }
+.glass-strong ::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* ============================================================
+   Print
+   ============================================================ */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; color: #000; }
+  .print-area { box-shadow: none !important; border: none !important; }
+  @page { size: A4; margin: 14mm; }
+}
