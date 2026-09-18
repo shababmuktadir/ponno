@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Sparkles, X, Download } from "lucide-react";
+import { RefreshCw, Sparkles, X, Wifi } from "lucide-react";
 import Button from "@/components/ui/Button";
 import useAppUpdate from "@/hooks/useAppUpdate";
 import { APP_VERSION, BUILD_ID } from "@/config/version";
@@ -7,6 +8,13 @@ import { APP_VERSION, BUILD_ID } from "@/config/version";
 export default function UpdateNotification() {
   const { needRefresh, offlineReady, updating, applyUpdate, dismiss } =
     useAppUpdate();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <>
@@ -38,8 +46,8 @@ export default function UpdateNotification() {
                     নতুন আপডেট পাওয়া গেছে
                   </p>
                   <p className="mt-0.5 text-[11px] leading-relaxed text-muted">
-                    Version {APP_VERSION} ({BUILD_ID}) রিলিজ হয়েছে।
-                    এখনই আপডেট করে নতুন ফিচার উপভোগ করুন।
+                    Version {APP_VERSION} ({BUILD_ID}) রিলিজ হয়েছে। এখনই
+                    আপডেট করে নতুন ফিচার উপভোগ করুন।
                   </p>
                   <div className="mt-3 flex gap-2">
                     <Button size="sm" onClick={applyUpdate} loading={updating}>
@@ -59,7 +67,7 @@ export default function UpdateNotification() {
         )}
       </AnimatePresence>
 
-      {/* ---------- Offline Ready ---------- */}
+      {/* ---------- Offline Ready (auto-hides) ---------- */}
       <AnimatePresence>
         {offlineReady && (
           <motion.div
@@ -70,7 +78,7 @@ export default function UpdateNotification() {
             className="no-print fixed left-1/2 top-3 z-[65] -translate-x-1/2"
           >
             <div className="glass-strong flex items-center gap-2 rounded-full px-4 py-2 text-xs text-ink">
-              <Sparkles className="h-3.5 w-3.5 text-success" />
+              <Wifi className="h-3.5 w-3.5 text-success" />
               অ্যাপ এখন offline-এও কাজ করবে
             </div>
           </motion.div>
